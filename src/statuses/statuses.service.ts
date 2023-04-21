@@ -1,26 +1,39 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { CreateStatusDto } from './dto/create-status.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Status } from './entities/status.entity';
+import { Repository, UpdateResult } from 'typeorm';
 
 @Injectable()
 export class StatusesService {
-  create(createStatusDto: CreateStatusDto) {
-    return 'This action adds a new status';
+  constructor(
+    @InjectRepository(Status)
+    private statusesRepository: Repository<Status>
+  ) {}
+
+  async create(createStatusDto: CreateStatusDto):Promise<Status> {
+    const status: Status = this.statusesRepository.create(createStatusDto);
+    return await this.statusesRepository.save(status);
   }
 
-  findAll() {
-    return `This action returns all statuses`;
+  async findAll(): Promise<Status[]>{
+    return await this.statusesRepository.find()
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} status`;
+  async findOne(id: string): Promise<Status> {
+    return await this.statusesRepository.findOneBy({ id });
   }
 
-  update(id: number, updateStatusDto: UpdateStatusDto) {
-    return `This action updates a #${id} status`;
+  async update(id: string, updateStatusDto: UpdateStatusDto): Promise<UpdateResult> {
+    const staus: Status = await this.findOne(id);
+    if (!staus) throw new BadRequestException('El proyecto no existe')
+    return await this.statusesRepository.update({ id }, updateStatusDto);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} status`;
+  async remove(id: string): Promise<Status> {
+    const status: Status = await this.findOne(id);
+    if (!status) throw new BadRequestException('El proyecto no existe')
+    return await this.statusesRepository.softRemove(status)
   }
 }
